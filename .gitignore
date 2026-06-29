@@ -1,0 +1,8 @@
+.env
+trophies.db
+bot.log
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/

@@ -1,0 +1,13 @@
+[Unit]
+Description=Trophy Tracker Telegram Bot
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/trophy_bot
+ExecStart=/opt/trophy_bot/venv/bin/python bot.py
+Restart=always
+RestartSec=5
+EnvironmentFile=/opt/trophy_bot/.env
+
+[Install]
+WantedBy=multi-user.target
