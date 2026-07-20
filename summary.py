@@ -1,7 +1,7 @@
 """Shared summary-posting logic used by both the scheduler and /summary command."""
 from telegram import Bot, InputMediaPhoto
 from db import get_current_standings, save_summary, get_recent_summaries
-from charts import bar_chart, trend_chart
+from charts import bar_chart, trend_chart, projection_chart
 
 
 def _standings_text(standings) -> str:
@@ -40,13 +40,15 @@ async def post_summary(bot: Bot, chat_id: int, header: str = "📊 *Bi-Daily Tro
     bar = bar_chart(standings)
     summaries = get_recent_summaries(None)
     trend = trend_chart(summaries)
+    projection = projection_chart(summaries)
 
-    if bar and trend:
-        await bot.send_media_group(
-            chat_id,
-            [InputMediaPhoto(bar, caption=text, parse_mode="Markdown"), InputMediaPhoto(trend)],
-        )
-    elif bar:
-        await bot.send_photo(chat_id, bar, caption=text, parse_mode="Markdown")
-    else:
+    photos = [p for p in (bar, trend, projection) if p]
+
+    if not photos:
         await bot.send_message(chat_id, text, parse_mode="Markdown")
+    elif len(photos) == 1:
+        await bot.send_photo(chat_id, photos[0], caption=text, parse_mode="Markdown")
+    else:
+        media = [InputMediaPhoto(photos[0], caption=text, parse_mode="Markdown")]
+        media += [InputMediaPhoto(p) for p in photos[1:]]
+        await bot.send_media_group(chat_id, media)
