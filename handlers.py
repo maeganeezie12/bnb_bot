@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 from db import add_entry, get_current_standings, get_user_history
-from summary import post_summary, _standings_text
+from summary import post_summary, post_projection, _standings_text
 
 
 async def cmd_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -32,6 +32,10 @@ async def cmd_summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await post_summary(context.bot, update.effective_chat.id, header="📊 *Trophy Summary*")
 
 
+async def cmd_projection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await post_projection(context.bot, update.effective_chat.id)
+
+
 async def cmd_mystats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     history = get_user_history(str(user.id))
@@ -54,6 +58,7 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/add <number> — Log your trophy count  e.g. /add 42\n"
         "/leaderboard — Current standings with catch-up %\n"
         "/summary — Full summary with charts\n"
+        "/projection — Catch-up projection chart\n"
         "/mystats — Your own submission history\n"
         "/help — Show this message\n\n"
         "Tip: just send a number (e.g. `42`) as a shortcut for /add\n"

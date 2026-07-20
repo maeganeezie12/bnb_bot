@@ -40,9 +40,8 @@ async def post_summary(bot: Bot, chat_id: int, header: str = "📊 *Bi-Daily Tro
     bar = bar_chart(standings)
     summaries = get_recent_summaries(None)
     trend = trend_chart(summaries)
-    projection = projection_chart(summaries)
 
-    photos = [p for p in (bar, trend, projection) if p]
+    photos = [p for p in (bar, trend) if p]
 
     if not photos:
         await bot.send_message(chat_id, text, parse_mode="Markdown")
@@ -52,3 +51,14 @@ async def post_summary(bot: Bot, chat_id: int, header: str = "📊 *Bi-Daily Tro
         media = [InputMediaPhoto(photos[0], caption=text, parse_mode="Markdown")]
         media += [InputMediaPhoto(p) for p in photos[1:]]
         await bot.send_media_group(chat_id, media)
+
+
+async def post_projection(bot: Bot, chat_id: int):
+    summaries = get_recent_summaries(None)
+    projection = projection_chart(summaries)
+
+    if not projection:
+        await bot.send_message(chat_id, "Not enough history yet to project a catch-up — keep logging trophies!")
+        return
+
+    await bot.send_photo(chat_id, projection, caption="🔮 *Catch-Up Projection*", parse_mode="Markdown")
