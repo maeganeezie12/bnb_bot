@@ -55,10 +55,20 @@ async def post_summary(bot: Bot, chat_id: int, header: str = "📊 *Bi-Daily Tro
 
 async def post_projection(bot: Bot, chat_id: int):
     summaries = get_recent_summaries(None)
-    projection = projection_chart(summaries)
+    projection, crossovers = projection_chart(summaries)
 
     if not projection:
         await bot.send_message(chat_id, "Not enough history yet to project a catch-up — keep logging trophies!")
         return
 
-    await bot.send_photo(chat_id, projection, caption="🔮 *Catch-Up Projection*", parse_mode="Markdown")
+    caption = "🔮 *Catch-Up Projection*"
+    if crossovers:
+        lines = [
+            f"• *{c['name']}* catches *{c['leader']}* ~{c['date'].strftime('%b %d, %Y')} (~{c['days']:.0f} days)"
+            for c in sorted(crossovers, key=lambda c: c["days"])
+        ]
+        caption += "\n\n" + "\n".join(lines)
+    else:
+        caption += "\n\nNo one is projected to catch the leader at current rates."
+
+    await bot.send_photo(chat_id, projection, caption=caption, parse_mode="Markdown")
