@@ -1,5 +1,6 @@
 import io
 import json
+from datetime import datetime
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -79,7 +80,17 @@ def trend_chart(summaries) -> io.BytesIO | None:
 
     for name, series in user_series.items():
         y = [series.get(d) for d in dates]
-        ax.plot(dates, y, marker="o", label=name, linewidth=2)
+        label = name
+
+        present = [d for d in dates if d in series]
+        if len(present) >= 2:
+            first_date, last_date = present[0], present[-1]
+            days = (datetime.strptime(last_date, "%Y-%m-%d") - datetime.strptime(first_date, "%Y-%m-%d")).days
+            if days > 0:
+                rate = (series[last_date] - series[first_date]) / days
+                label = f"{name} ({rate:+.2f}/day)"
+
+        ax.plot(dates, y, marker="o", label=label, linewidth=2)
         # annotate last point
         last_y = y[-1]
         if last_y is not None:
