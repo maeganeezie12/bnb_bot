@@ -80,11 +80,16 @@ def save_summary(snapshot: list):
         )
 
 
-def get_recent_summaries(limit: int = 4):
-    """Returns up to `limit` most recent summaries, oldest first."""
+def get_recent_summaries(limit: int | None = 4):
+    """Returns up to `limit` most recent summaries, oldest first. Pass limit=None for all-time history."""
     with _conn() as conn:
-        rows = conn.execute(
-            "SELECT posted_at, snapshot_json FROM summaries ORDER BY posted_at DESC LIMIT ?",
-            (limit,),
-        ).fetchall()
+        if limit is None:
+            rows = conn.execute(
+                "SELECT posted_at, snapshot_json FROM summaries ORDER BY posted_at DESC",
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT posted_at, snapshot_json FROM summaries ORDER BY posted_at DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
     return list(reversed(rows))

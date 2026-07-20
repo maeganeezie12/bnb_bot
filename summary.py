@@ -38,7 +38,7 @@ async def post_summary(bot: Bot, chat_id: int, header: str = "📊 *Bi-Daily Tro
     text = f"{header}\n\n{_standings_text(standings)}"
 
     bar = bar_chart(standings)
-    summaries = get_recent_summaries(4)
+    summaries = get_recent_summaries(None)
     trend = trend_chart(summaries)
 
     if bar and trend:
