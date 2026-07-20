@@ -4,6 +4,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import matplotlib.ticker as mticker
 
 RANK_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"]
 DEFAULT_COLOR = "#8B9BB4"
@@ -74,7 +75,7 @@ def trend_chart(summaries) -> io.BytesIO | None:
             name = entry["username"]
             user_series.setdefault(name, {})[date] = entry["trophies"]
 
-    fig, ax = plt.subplots(figsize=(max(6, len(dates) * 1.8), 5))
+    fig, ax = plt.subplots(figsize=(max(6, len(user_series) * 1.4), 5))
 
     for name, series in user_series.items():
         y = [series.get(d) for d in dates]
@@ -91,7 +92,8 @@ def trend_chart(summaries) -> io.BytesIO | None:
     ax.legend(fontsize=9, loc="upper left")
     ax.spines[["top", "right"]].set_visible(False)
     ax.yaxis.grid(True, linestyle="--", alpha=0.4)
-    plt.xticks(rotation=15, fontsize=9)
+    ax.xaxis.set_major_locator(mticker.MaxNLocator(nbins=10, integer=True, prune="both"))
+    plt.xticks(rotation=45, ha="right", fontsize=9)
     plt.tight_layout()
 
     buf = io.BytesIO()
