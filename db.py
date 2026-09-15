@@ -63,6 +63,19 @@ def get_current_standings():
     return rows  # [(user_id, username, trophies, submitted_at)]
 
 
+def delete_last_entry(user_id: str):
+    """Delete the most recent entry for a user. Returns the deleted (trophies, submitted_at), or None if they have no entries."""
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT id, trophies, submitted_at FROM entries WHERE user_id = ? ORDER BY id DESC LIMIT 1",
+            (user_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        conn.execute("DELETE FROM entries WHERE id = ?", (row[0],))
+    return row[1], row[2]
+
+
 def get_user_history(user_id: str):
     with _conn() as conn:
         rows = conn.execute(

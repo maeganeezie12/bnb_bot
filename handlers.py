@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from db import add_entry, get_current_standings, get_user_history
+from db import add_entry, delete_last_entry, get_current_standings, get_user_history
 from summary import post_summary, post_projection, _standings_text
 
 
@@ -20,6 +20,18 @@ async def cmd_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Use the message's original send time so backlogged messages get the right timestamp
     add_entry(str(user.id), user.first_name, trophies, submitted_at=update.message.date)
     await update.message.reply_text(f"Recorded! {user.first_name}: {trophies} 🏆")
+
+
+async def cmd_undo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    deleted = delete_last_entry(str(user.id))
+
+    if deleted is None:
+        await update.message.reply_text("You don't have any entries to undo.")
+        return
+
+    trophies, _ = deleted
+    await update.message.reply_text(f"Undone! Removed your last entry: {trophies} 🏆")
 
 
 async def cmd_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -56,6 +68,7 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
         "🏆 *Trophy Tracker*\n\n"
         "/add <number> — Log your trophy count  e.g. /add 42\n"
+        "/undo — Remove your own last entry\n"
         "/leaderboard — Current standings with catch-up %\n"
         "/summary — Full summary with charts\n"
         "/projection — Catch-up projection chart\n"

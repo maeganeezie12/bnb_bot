@@ -5,7 +5,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 
 from pathlib import Path
 from db import init_db
-from handlers import cmd_add, cmd_leaderboard, cmd_summary, cmd_projection, cmd_mystats, cmd_help, plain_number
+from handlers import cmd_add, cmd_undo, cmd_leaderboard, cmd_summary, cmd_projection, cmd_mystats, cmd_help, plain_number
 from summary import post_summary
 
 load_dotenv()
@@ -34,6 +34,7 @@ def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("add", cmd_add))
+    app.add_handler(CommandHandler("undo", cmd_undo))
     app.add_handler(CommandHandler("leaderboard", cmd_leaderboard))
     app.add_handler(CommandHandler("summary", cmd_summary))
     app.add_handler(CommandHandler("projection", cmd_projection))
