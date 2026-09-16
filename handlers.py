@@ -1,15 +1,29 @@
+from datetime import timedelta
+
 from telegram import Update
 from telegram.ext import ContextTypes
 from db import add_entry, delete_last_entry, get_current_standings, get_user_history
 from summary import post_summary, post_projection, _standings_text
 
+_YESTERDAY_KEYWORDS = {"ytd", "yesterday"}
+
+
+def _extract_yesterday(tokens: list) -> tuple:
+    """Pulls a "ytd"/"yesterday" keyword out of the token list (any
+    position), so "/add 42 ytd" or "42 ytd" backdates the entry by a day.
+    Returns (was_yesterday, remaining_tokens)."""
+    is_yesterday = any(t.lower() in _YESTERDAY_KEYWORDS for t in tokens)
+    remaining = [t for t in tokens if t.lower() not in _YESTERDAY_KEYWORDS]
+    return is_yesterday, remaining
+
 
 async def cmd_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    raw = " ".join(context.args).strip() if context.args else ""
+    is_yesterday, remaining_args = _extract_yesterday(context.args or [])
+    raw = " ".join(remaining_args).strip()
 
     if not raw.lstrip("-").isdigit():
-        await update.message.reply_text("Usage: /add <number>  e.g. /add 42")
+        await update.message.reply_text("Usage: /add <number> [ytd]  e.g. /add 42 or /add 42 ytd")
         return
 
     trophies = int(raw)
@@ -17,9 +31,12 @@ async def cmd_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Trophy count can't be negative!")
         return
 
-    # Use the message's original send time so backlogged messages get the right timestamp
-    add_entry(str(user.id), user.first_name, trophies, submitted_at=update.message.date)
-    await update.message.reply_text(f"Recorded! {user.first_name}: {trophies} 🏆")
+    # Use the message's original send time so backlogged messages get the right timestamp,
+    # unless "ytd"/"yesterday" was included to explicitly backdate by a day.
+    submitted_at = update.message.date - timedelta(days=1) if is_yesterday else update.message.date
+    add_entry(str(user.id), user.first_name, trophies, submitted_at=submitted_at)
+    suffix = " (yesterday)" if is_yesterday else ""
+    await update.message.reply_text(f"Recorded! {user.first_name}: {trophies} 🏆{suffix}")
 
 
 async def cmd_undo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -67,29 +84,32 @@ async def cmd_mystats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
         "🏆 *Trophy Tracker*\n\n"
-        "/add <number> — Log your trophy count  e.g. /add 42\n"
+        "/add <number> — Log your trophy count  e.g. /add 42 (append `ytd` to backdate to yesterday)\n"
         "/undo — Remove your own last entry\n"
         "/leaderboard — Current standings with catch-up %\n"
         "/summary — Full summary with charts\n"
         "/projection — Catch-up projection chart\n"
         "/mystats — Your own submission history\n"
         "/help — Show this message\n\n"
-        "Tip: just send a number (e.g. `42`) as a shortcut for /add\n"
+        "Tip: just send a number (e.g. `42`, or `42 ytd` for yesterday) as a shortcut for /add\n"
         "If the bot was offline when you sent your score, it will catch up automatically when it restarts."
     )
     await update.message.reply_text(text, parse_mode="Markdown")
 
 
 async def plain_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()
-    if not text.lstrip("-").isdigit():
+    is_yesterday, remaining_tokens = _extract_yesterday(update.message.text.strip().split())
+    raw = " ".join(remaining_tokens).strip()
+    if not raw.lstrip("-").isdigit():
         return
 
     user = update.effective_user
-    trophies = int(text)
+    trophies = int(raw)
     if trophies < 0:
         await update.message.reply_text("Trophy count can't be negative!")
         return
 
-    add_entry(str(user.id), user.first_name, trophies, submitted_at=update.message.date)
-    await update.message.reply_text(f"Recorded! {user.first_name}: {trophies} 🏆")
+    submitted_at = update.message.date - timedelta(days=1) if is_yesterday else update.message.date
+    add_entry(str(user.id), user.first_name, trophies, submitted_at=submitted_at)
+    suffix = " (yesterday)" if is_yesterday else ""
+    await update.message.reply_text(f"Recorded! {user.first_name}: {trophies} 🏆{suffix}")
